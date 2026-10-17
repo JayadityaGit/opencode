@@ -307,12 +307,13 @@ describe("toSessionError", () => {
     ).toBeTrue()
   })
 
-  test("appends VPN disconnection hint to free-tier and rate limit errors", () => {
+  test("appends VPN disconnection hint to gateway free-tier and rate limit errors", () => {
     const freeTier = toSessionError(
       llm(
         new AuthenticationError({
           message:
             "OpenCode's free tier can only be used from within OpenCode. Download it at https://opencode.ai and keep building.",
+          body: JSON.stringify({ error: { type: "FreeTierError" } }),
         }),
       ),
     )
@@ -320,16 +321,28 @@ describe("toSessionError", () => {
       "OpenCode's free tier can only be used from within OpenCode. Download it at https://opencode.ai and keep building. If you are using a VPN or proxy, try disconnecting it.",
     )
 
-    const rateLimit = toSessionError(
+    const gatewayRateLimit = toSessionError(
       llm(
         new RateLimitError({
           message: "Rate limit exceeded. Please try again later.",
+          body: JSON.stringify({ error: { type: "FreeUsageLimitError" } }),
         }),
       ),
     )
-    expect(rateLimit.message).toBe(
+    expect(gatewayRateLimit.message).toBe(
       "Rate limit exceeded. Please try again later. If you are using a VPN or proxy, try disconnecting it.",
     )
+
+    const otherProviderRateLimit = toSessionError(
+      llm(
+        new RateLimitError({
+          message: "Rate limit exceeded: anthropic/claude per-minute quota",
+          body: JSON.stringify({ error: { type: "rate_limit_error" } }),
+        }),
+      ),
+    )
+    expect(otherProviderRateLimit.message).toBe("Rate limit exceeded: anthropic/claude per-minute quota")
   })
 })
+
 
