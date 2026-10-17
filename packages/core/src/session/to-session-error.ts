@@ -96,10 +96,20 @@ export function contentFilterError(summary: string, reason: FinishReasonDetails)
 
 function providerError(type: string, reason: AIError["reason"]): SessionError.Error {
   const status = reason.http?.status
+  const message =
+    Object.entries(tokenSharingMessages).find(([code]) => reason.body?.includes(code))?.[1] ?? reason.message
   return {
     type,
-    message: Object.entries(tokenSharingMessages).find(([code]) => reason.body?.includes(code))?.[1] ?? reason.message,
+    message: vpnHint(message),
     ...(status === undefined ? {} : { status }),
     ...(reason.body === undefined ? {} : { response: { body: reason.body } }),
   }
 }
+
+function vpnHint(message: string) {
+  if (message.includes("can only be used from within OpenCode") || message.includes("Rate limit exceeded")) {
+    return `${message}${message.endsWith(".") ? " " : ". "}If you are using a VPN or proxy, try disconnecting it.`
+  }
+  return message
+}
+

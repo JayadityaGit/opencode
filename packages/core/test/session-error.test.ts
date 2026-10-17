@@ -306,4 +306,30 @@ describe("toSessionError", () => {
       ),
     ).toBeTrue()
   })
+
+  test("appends VPN disconnection hint to free-tier and rate limit errors", () => {
+    const freeTier = toSessionError(
+      llm(
+        new AuthenticationError({
+          message:
+            "OpenCode's free tier can only be used from within OpenCode. Download it at https://opencode.ai and keep building.",
+        }),
+      ),
+    )
+    expect(freeTier.message).toBe(
+      "OpenCode's free tier can only be used from within OpenCode. Download it at https://opencode.ai and keep building. If you are using a VPN or proxy, try disconnecting it.",
+    )
+
+    const rateLimit = toSessionError(
+      llm(
+        new RateLimitError({
+          message: "Rate limit exceeded. Please try again later.",
+        }),
+      ),
+    )
+    expect(rateLimit.message).toBe(
+      "Rate limit exceeded. Please try again later. If you are using a VPN or proxy, try disconnecting it.",
+    )
+  })
 })
+
